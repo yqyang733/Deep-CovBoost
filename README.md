@@ -12,10 +12,12 @@
 程序主体见PredAffinity文件夹。 
 （1）数据准备。使用 [DataSplit.py](PredAffinity/DataSplit.py) 对输入数据进行规范化处理并生成五折交叉验证的输入数据。  
 （2）五折交叉验证。使用 [DDGmpnnTrain.py](PredAffinity/DDGmpnnTrain.py) 进行五折交叉验证。  
-（3）预测。使用 [DDGmpnnPredict.py](PredAffinity/DDGmpnnPredict.py) 进行 
+（3）预测。使用 [DDGmpnnPredict.py](PredAffinity/DDGmpnnPredict.py) 进行。 
 
 ## Free Energy Perturbation (FEP) 
-程序主体见FEP文件夹。  
+
+![](images/FEP.png)
+
 （1）小分子mol2文件准备。准备FEP计算所需的A状态和B状态的小分子配体mol2文件。  
 （2）小分子力场文件准备。将上述A和B两个状态的小分子mol2文件使用 CHARMM-GUI 的 Ligand Reader & Modeler 模块生成力场文件。  
 （3）FEP计算文件准备。基于上述力场文件使用 [FEPMolSetup.py](FEP/FEPMolSetup.py) 生成FEP计算所需文件。
