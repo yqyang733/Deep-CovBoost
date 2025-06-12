@@ -9,6 +9,9 @@
 （3）组装生成新分子。使用 [generatemollibrary.py](GenMol/generatemollibrary.py) 将先导化合物骨架与分子碎片组装生成新分子。
 
 ## AI-based Binding Affinity Prediction
+
+![](images/PredAffinity.png)
+
 程序主体见PredAffinity文件夹。 
 （1）数据准备。使用 [DataSplit.py](PredAffinity/DataSplit.py) 对输入数据进行规范化处理并生成五折交叉验证的输入数据。  
 （2）五折交叉验证。使用 [DDGmpnnTrain.py](PredAffinity/DDGmpnnTrain.py) 进行五折交叉验证。  
