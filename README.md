@@ -19,7 +19,7 @@
 
 ## Free Energy Perturbation (FEP) 
 
-<img src="images/FEP.png" alt="FEP" width="500" />  
+<img src="images/FEP.png" alt="FEP" width="300" />  
 
 **​​(1) Prepare input files.​​**  
 Prepare mol2 files of the ligand molecules representing State A and State B for FEP calculations. Use CHARMM-GUI's ​Ligand Reader & Modeler module​ to generate force field parameters for both ligand mol2 files.  
