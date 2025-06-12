@@ -10,7 +10,7 @@
 
 ## AI-based Binding Affinity Prediction
 
-![](images/PredAffinity.png)
+<img src="images/PredAffinity.png" alt="PredAffinity" width="300" />  
 
 程序主体见PredAffinity文件夹。 
 （1）数据准备。使用 [DataSplit.py](PredAffinity/DataSplit.py) 对输入数据进行规范化处理并生成五折交叉验证的输入数据。  
