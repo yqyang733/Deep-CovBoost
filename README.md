@@ -10,7 +10,7 @@
 
 ## AI-based Binding Affinity Prediction
 
-<img src="images/PredAffinity.png" alt="PredAffinity" width="300" />  
+<img src="images/PredAffinity.png" alt="PredAffinity" width="500" />  
 
 程序主体见PredAffinity文件夹。 
 （1）数据准备。使用 [DataSplit.py](PredAffinity/DataSplit.py) 对输入数据进行规范化处理并生成五折交叉验证的输入数据。  
@@ -19,7 +19,7 @@
 
 ## Free Energy Perturbation (FEP) 
 
-![](images/FEP.png)
+<img src="images/FEP.png" alt="FEP" width="500" />  
 
 **​​(1) Prepare input files.​​**  
 Prepare mol2 files of the ligand molecules representing State A and State B for FEP calculations. Use CHARMM-GUI's ​Ligand Reader & Modeler module​ to generate force field parameters for both ligand mol2 files.  
