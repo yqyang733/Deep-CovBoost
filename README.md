@@ -17,10 +17,14 @@ Generate novel compound libraries by assembling lead compound scaffolds with mol
 
 <img src="images/PredAffinity.png" alt="PredAffinity" width="500" />  
 
-程序主体见PredAffinity文件夹。 
-（1）数据准备。使用 [DataSplit.py](PredAffinity/DataSplit.py) 对输入数据进行规范化处理并生成五折交叉验证的输入数据。  
-（2）五折交叉验证。使用 [DDGmpnnTrain.py](PredAffinity/DDGmpnnTrain.py) 进行五折交叉验证。  
-（3）预测。使用 [DDGmpnnPredict.py](PredAffinity/DDGmpnnPredict.py) 进行。 
+**(1) Data preparation.**  
+[DataSplit.py](PredAffinity/DataSplit.py) normalizes input data and generates five-fold cross-validation input data.  
+
+**(2) Five-fold cross-validation.**  
+[DDGmpnnTrain.py](PredAffinity/DDGmpnnTrain.py) performs five-fold cross-validation.  
+
+**(3) Prediction.​**  
+[DDGmpnnPredict.py](PredAffinity/DDGmpnnPredict.py) performs prediction.  
 
 ## Free Energy Perturbation (FEP) 
 
