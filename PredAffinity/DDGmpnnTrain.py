@@ -13,24 +13,34 @@ from torch.autograd import Variable
 from lifelines.utils import concordance_index
 from torch.utils.data import SequentialSampler
 from torch.utils.data.dataloader import default_collate
-from sklearn.metrics import mean_squared_error, roc_auc_score, average_precision_score, f1_score, log_loss
+from sklearn.metrics import mean_squared_error
 
-
-ELEM_LIST = ['C', 'N', 'O', 'S', 'F', 'Si', 'P', 'Cl', 'Br', 'Mg', 'Na', 'Ca', 'Fe', 'Al', 'I', 'B', 'K', 'Se', 'Zn', 'H', 'Cu', 'Mn', 'unknown']
-ATOM_FDIM = len(ELEM_LIST) + 6 + 5 + 4 + 1
-BOND_FDIM = 5 + 6
-MAX_NB = 6
-MAX_ATOM = 400
-MAX_BOND = MAX_ATOM * 2
+elelst = ['C', 'N', 'O', 'S', 'F', 'Si', 'P', 'Cl', 'Br', 'Mg', 'Na', 'Ca', 'Fe', 'Al', 'I', 'B', 'K', 'Se', 'Zn', 'H', 'Cu', 'Mn', 'unknown']
+atmdim = len(elelst) + 16
+bonddim = 11
+nbmax = 6
+atmmax = 400
+bondmax = atmmax * 2
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class config:
 
     def __init__(self):
 
-        self.train = os.path.join("./Fold0/train.csv")
-        self.valid = os.path.join("./Fold0/valid.csv")
-        self.test = os.path.join("./Fold0/test.csv")
+        self.train = os.path.join("train.csv")
+        self.valid = os.path.join("valid.csv")
+        self.test = os.path.join("test.csv")
+
+        self.result_folder = os.path.join("Fold0")
+        self.LR = 0.001
+        self.decay = 0.00001
+        self.batch_size = 64
+        self.train_epoch = 60
+        self.hidden_dim_drug = 128
+        self.mpnn_hidden_size = 128
+        self.mpnn_depth = 3
+        self.cls_hidden_dims = [512, 256, 128]
+        self.num_workers = 0
 
 def get_mol(smiles):
     mol = Chem.MolFromSmiles(smiles)
@@ -45,7 +55,7 @@ def onek_encoding_unk(x, allowable_set):
     return list(map(lambda s: x == s, allowable_set))
 
 def atom_features(atom):
-    return torch.Tensor(onek_encoding_unk(atom.GetSymbol(), ELEM_LIST) 
+    return torch.Tensor(onek_encoding_unk(atom.GetSymbol(), elelst) 
             + onek_encoding_unk(atom.GetDegree(), [0,1,2,3,4,5]) 
             + onek_encoding_unk(atom.GetFormalCharge(), [-1,-2,1,2,0])
             + onek_encoding_unk(int(atom.GetChiralTag()), [0,1,2,3])
@@ -61,16 +71,14 @@ def bond_features(bond):
 def smiles2mpnnfeature(smiles):
     flag = False
     try: 
-        padding = torch.zeros(ATOM_FDIM + BOND_FDIM)
+        padding = torch.zeros(atmdim + bonddim)
         fatoms, fbonds = [], [padding] 
         in_bonds,all_bonds = [], [(-1,-1)] 
         mol = get_mol(smiles)
         n_atoms = mol.GetNumAtoms()
         for atom in mol.GetAtoms():
-            #print(atom.GetSymbol())
             fatoms.append(atom_features(atom))
             in_bonds.append([])
-        #print("fatoms: ",fatoms)
 
         for bond in mol.GetBonds():
             #print(bond)
@@ -93,8 +101,8 @@ def smiles2mpnnfeature(smiles):
         total_bonds = len(all_bonds)
         fatoms = torch.stack(fatoms, 0) 
         fbonds = torch.stack(fbonds, 0) 
-        agraph = torch.zeros(n_atoms,MAX_NB).long()
-        bgraph = torch.zeros(total_bonds,MAX_NB).long()
+        agraph = torch.zeros(n_atoms,nbmax).long()
+        bgraph = torch.zeros(total_bonds,nbmax).long()
         for a in range(n_atoms):
             for i,b in enumerate(in_bonds[a]):
                 agraph[a,i] = b
@@ -120,26 +128,19 @@ def smiles2mpnnfeature(smiles):
     #print(fatoms.shape, fbonds.shape, agraph.shape, bgraph.shape)
     Natom, Nbond = fatoms.shape[0], fbonds.shape[0]
 
-
-    ''' 
-    ## completion to make feature size equal. 
-    MAX_ATOM = 100
-    MAX_BOND = 200
-    '''
-    atoms_completion_num = MAX_ATOM - fatoms.shape[0]
-    bonds_completion_num = MAX_BOND - fbonds.shape[0]
+    atoms_completion_num = atmmax - fatoms.shape[0]
+    bonds_completion_num = bondmax - fbonds.shape[0]
     try:
         assert atoms_completion_num >= 0 and bonds_completion_num >= 0
     except:
-        raise Exception("Please increasing MAX_ATOM in line 26 utils.py, for example, MAX_ATOM=600 and reinstall it via 'python setup.py install'. The current setting is for small molecule. ")
-
+        raise Exception("Please increasing atmmax.")
 
     fatoms_dim = fatoms.shape[1]
     fbonds_dim = fbonds.shape[1]
     fatoms = torch.cat([fatoms, torch.zeros(atoms_completion_num, fatoms_dim)], 0)
     fbonds = torch.cat([fbonds, torch.zeros(bonds_completion_num, fbonds_dim)], 0)
-    agraph = torch.cat([agraph.float(), torch.zeros(atoms_completion_num, MAX_NB)], 0)
-    bgraph = torch.cat([bgraph.float(), torch.zeros(bonds_completion_num, MAX_NB)], 0)
+    agraph = torch.cat([agraph.float(), torch.zeros(atoms_completion_num, nbmax)], 0)
+    bgraph = torch.cat([bgraph.float(), torch.zeros(bonds_completion_num, nbmax)], 0)
     # print("atom size", fatoms.shape[0], agraph.shape[0])
     # print("bond size", fbonds.shape[0], bgraph.shape[0])
     shape_tensor = torch.Tensor([Natom, Nbond]).view(1,-1)
@@ -165,9 +166,9 @@ class MPNN(nn.Sequential):
         self.mpnn_hidden_size = mpnn_hidden_size
         self.mpnn_depth = mpnn_depth 
 
-        self.W_i = nn.Linear(ATOM_FDIM + BOND_FDIM, self.mpnn_hidden_size, bias=False)
+        self.W_i = nn.Linear(atmdim + bonddim, self.mpnn_hidden_size, bias=False)
         self.W_h = nn.Linear(self.mpnn_hidden_size, self.mpnn_hidden_size, bias=False)
-        self.W_o = nn.Linear(ATOM_FDIM + self.mpnn_hidden_size, self.mpnn_hidden_size)
+        self.W_o = nn.Linear(atmdim + self.mpnn_hidden_size, self.mpnn_hidden_size)
 
     def forward(self, feature):
         '''
@@ -239,13 +240,9 @@ class Classifier(nn.Sequential):
         self.predictor = nn.ModuleList([nn.Linear(dims[i], dims[i+1]) for i in range(layer_size)])
 
     def forward(self, v_D, v_P):
-        # each encoding
-        # print("v_D:", print(len(v_D)))
+        
         v_D = self.model_drug(v_D)
-        # print("v_D_1:", v_D.shape)
-        # print("v_P:", len(v_P))
         v_P = self.model_drug(v_P)
-        # concatenate and classify
         v_f = torch.cat((v_D, v_P), 1)
         for i, l in enumerate(self.predictor):
             if i==(len(self.predictor)-1):
@@ -306,11 +303,9 @@ class DD_Model:
 
     def __init__(self, **config):
         
-        drug_encoding = config['drug_encoding']
         self.model_drug = MPNN(config['hidden_dim_drug'], config['mpnn_depth'])
         self.model = Classifier(self.model_drug, **config)
         self.config = config
-        self.drug_encoding = drug_encoding
         self.result_folder = config['result_folder']
         self.device = device
         if not os.path.exists(self.result_folder):
@@ -417,7 +412,7 @@ class DD_Model:
                 test_log.write("{0},{1},{2},{3}\n".format(str(round(mse, 3)), str(round(r2, 3)), str(round(p_val, 3)), str(round(CI, 3))))
                 test_log.flush()
 
-            self.save_model("./Fold0/Fold0_model_epoch" + str(epo))
+            self.save_model(os.path.join(self.result_folder, "Fold_model_epoch" + str(epo)))
 
         # load early stopped model
         self.model = model_max
@@ -516,23 +511,22 @@ def run():
  
     valid_data = read_data(settings.valid)
 
-    conf = {"drug_encoding": "MPNN", 
-            "cls_hidden_dims": [2048, 1024, 512], 
-            "result_folder": os.path.join("./Fold0/"), 
-            "train_epoch": 60,
-            "LR": 0.001, 
-            "decay": 0.00001,
-            "batch_size": 64,
-            "hidden_dim_drug": 128,
-            "mpnn_hidden_size": 128,
-            "mpnn_depth": 3, 
-            "num_workers": 0}
+    conf = {"result_folder": settings.result_folder, 
+            "LR": settings.LR, 
+            "decay": settings.decay,
+            "batch_size": settings.batch_size,
+            "train_epoch": settings.train_epoch,
+            "hidden_dim_drug": settings.hidden_dim_drug,
+            "mpnn_hidden_size": settings.mpnn_hidden_size,
+            "mpnn_depth": settings.mpnn_depth, 
+            "cls_hidden_dims": settings.cls_hidden_dims, 
+            "num_workers": settings.num_workers}
 
     model = model_initialize(**conf)
     print("Starting train.")
     model.train(train_data, valid_data, test)
     print("Training done.")
-    model.save_model("./Fold0/Fold0_model")
+    model.save_model(os.path.join(settings.result_folder, "Fold_model"))
 
 def main():
     run()

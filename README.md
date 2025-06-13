@@ -8,7 +8,7 @@
 
 **(1) Molecular fragmentation protocol.**  
 Execute molecular fragmentation of SMILES using
-[GenerateFragments.py](GenMol/GenerateFragments.py).  
+[GenerateFragments.py](GenMol/GenerateFragments.py). Process molecular fragments with [FragmentDict.py](GenMol/FragmentDict.py).  
 
 **(2) Generate in-house library.**  
 Generate novel compound libraries by assembling lead compound scaffolds with molecular fragments using [GenMolLibrary.py](GenMol/GenMolLibrary.py).  
