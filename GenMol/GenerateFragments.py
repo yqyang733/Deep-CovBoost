@@ -1,10 +1,11 @@
+import dbm
+import struct
+from rdkit import Chem
+from rdkit.Chem import BRICS
+from multiprocessing import Pool
 
-def get_fragment_zinc(in_file):
-    from rdkit import Chem
-    from rdkit.Chem import BRICS
-    import dbm
-    import struct
-
+def get_fragment(in_file):
+    
     outfname = in_file + '.dbm'
     outlog = in_file + '.log'
     db =  dbm.open(outfname, flag='n')
@@ -28,18 +29,18 @@ def get_fragment_zinc(in_file):
     db.close()
 
 def get_smis():
+    
     all_f = []
     for i in range(100):
         all_f.append("chembl_"+str(i).zfill(2))
     return all_f
 
 def main():
-
-    from multiprocessing import Pool
     
     all_f = get_smis()
+
     with Pool(128) as p:
-        p.map(get_fragment_zinc, all_f)
+        p.map(get_fragment, all_f)
 
 if __name__=="__main__":
     main() 

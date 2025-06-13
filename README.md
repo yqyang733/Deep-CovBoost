@@ -34,12 +34,6 @@ Generate novel compound libraries by assembling lead compound scaffolds with mol
 Prepare mol2 files of the ligand molecules representing State A and State B for FEP calculations. Use CHARMM-GUI's ​Ligand Reader & Modeler module​ to generate force field parameters for both ligand mol2 files.  
 
 **(2) Generate dual-topology file.**  
-Use [FEPMolSetup.py](FEP/FEPMolSetup.py) to create the dual-topology file required for FEP calculations:  
-```python
-python FEPMolSetup.py
-```
+Use [FEPMolSetup.py](FEP/FEPMolSetup.py) to create the dual-topology file required for FEP calculations.  
 
-**(3) Run FEP calculation.​**
-```shell
-sbatch do_fep.sh
-```
+**(3) Run FEP calculation.​** 
