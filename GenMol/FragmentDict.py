@@ -8,11 +8,11 @@ from collections import defaultdict
 def CleanFrags():
 
     all_counts = defaultdict(int)
-    for i in range(100):
-        dbname = "chembl_" + str(i).zfill(2) + '.dbm'
-        with dbm.open(dbname, flag='r') as db:
-            for key,val in db.items():
-                all_counts[key]+=struct.unpack('I',val)[0]
+    # for i in range(100):
+    dbname = "example.dbm"
+    with dbm.open(dbname, flag='r') as db:
+        for key,val in db.items():
+            all_counts[key]+=struct.unpack('I',val)[0]
 
     expr = re.compile(r'[0-9]+\*')
     clean_counts2 = defaultdict(int)
@@ -25,7 +25,7 @@ def CleanFrags():
         k = Chem.MolToSmiles(Chem.MolFromSmiles(expr.sub('*',k)),True)
         clean_counts2[k]+=v
     clean_itms2 = sorted([(v,k) for k,v in clean_counts2.items()],reverse=True)
-    pickle.dump(clean_counts2,open('chemical_words_clean_counts2.pkl','wb+'))
+    pickle.dump(clean_counts2,open('example_counts.pkl','wb+'))
 
     multidict_fragment = defaultdict(list)
     for i in clean_counts2.keys():
@@ -36,7 +36,7 @@ def CleanFrags():
         except:
             print("error: "+str(i))
             pass
-    pickle.dump(multidict_fragment, open('multidict_fragment_chembl.pkl','wb+'))
+    pickle.dump(multidict_fragment, open('example.pkl','wb+'))
 
 def main():
     

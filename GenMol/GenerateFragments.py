@@ -14,8 +14,8 @@ def get_fragment(in_file):
     with open(in_file) as f:
         for smi in f:
             idx += 1
-            if len(smi.split()) == 2:
-                m = Chem.MolFromSmiles(smi.split()[0])
+            if len(smi.split(",")) == 3:
+                m = Chem.MolFromSmiles(smi.split(",")[1])
                 if m is None or m.GetNumHeavyAtoms()>60: continue
                 s = BRICS.BRICSDecompose(m)
                 for entry in s:
@@ -28,19 +28,9 @@ def get_fragment(in_file):
                 pass
     db.close()
 
-def get_smis():
-    
-    all_f = []
-    for i in range(100):
-        all_f.append("chembl_"+str(i).zfill(2))
-    return all_f
-
 def main():
     
-    all_f = get_smis()
-
-    with Pool(128) as p:
-        p.map(get_fragment, all_f)
+    get_fragment("example")
 
 if __name__=="__main__":
     main() 
