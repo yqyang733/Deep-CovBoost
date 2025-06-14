@@ -8,7 +8,6 @@ from collections import defaultdict
 def CleanFrags():
 
     all_counts = defaultdict(int)
-    # for i in range(100):
     dbname = "example.dbm"
     with dbm.open(dbname, flag='r') as db:
         for key,val in db.items():
